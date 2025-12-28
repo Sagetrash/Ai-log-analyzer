@@ -1,61 +1,66 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-import shutil, platform
-app = FastAPI(title="Log Analysis Using GROK")
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from google import genai
+from dotenv import load_dotenv
+from pydantic import BaseModel
+import os, json
+from datetime import datetime
+from HistoryManager import appendHistory, displayHistory
 
-WrongFileException = HTTPException(status_code=400,detail="wrong file format: use only .txt or .log")
+load_dotenv()
+client = genai.Client()
+app = FastAPI()
+historyname = "History.json"
 
-@app.get("/")
-async def healthCheck():
-    return {"Status":"Running", "Message":"Backend is running"}
+class LogAnalysis(BaseModel):
+    Brief: str
+    solution: list[str]
 
-@app.post("/upload")
-async def upload_log(file: UploadFile = File(...)):
-    if not file.filename.endswith(('.log','.txt')):
-        raise WrongFileException
+@app.post("/analyseLog")
+async def analyseLog(file: UploadFile = File(...)):
+    if not file.filename.endswith((".log",".txt")):
+        raise HTTPException(400,"file format not supported")
+    
+    if not file:
+        raise HTTPException(400,"upload a file first")
     
     try:
-        content = await file.read()
-        log_text = content.decode('utf-8')
+        raw_data = await file.read()
+        content = raw_data.decode("utf-8")
 
-        return{
-            "filename":file.filename,
-            "content_type":file.content_type,
-            "size_bytes": len(content),
-            "lines_count": len(log_text.splitlines()),
-            "preview": log_text[:100]+"..."
-        }
-    except Exception as e:
-        raise HTTPException(status_code = 500, detail = f"error reading file: {str(e)}")
-
-
-@app.post("/clean_logs")
-async def clean_log(file: UploadFile = File(...)):
-    if not file.filename.endswith((".log",'.txt')):
-        raise WrongFileException
-    
-    try:
-        content = await file.read()
-        log_text = content.decode('utf-8')
-        lines = log_text.splitlines()
-        errors = []
-        for line in lines:
-            if "ERROR" in line.upper():
-                errors.append(line)
-
-        return {
-            "Content": errors
-        }
+        response = client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents="""
+            read the below given log and return a 2step solution in the format {"Breif":"error brief in one line","solution":2-step solution}, reply wiht only the dict format and nothing else"""+ content,
+            config={
+                "response_mime_type":"application/json",
+                "response_schema":LogAnalysis
+            }
+        )
+        await toHistory(response.parsed.model_dump())
+        return response.parsed
+    except HTTPException as e:
+        
+        raise e
 
 
-    except Exception as e:
-        raise HTTPException(status_code=500,detail=f"error reading file: {str(e)}")
+@app.get("/getHistory")
+async def getHistory():
+    return await displayHistory(filename=historyname)
 
-@app.get('/system_check')
-async def systemCheck():
 
-    return {
-        "os":platform.system(),
-        "kernel version":platform.release(),
-        "Architecture":platform.machine(),
-        "network name":platform.node()
+
+
+
+
+
+
+
+
+
+####### helper functions
+async def toHistory(response:dict):
+    metadata = {
+        "timestamp":datetime.now().isoformat()
     }
+    metadata.update(response)
+    await appendHistory(metadata,filename=historyname)

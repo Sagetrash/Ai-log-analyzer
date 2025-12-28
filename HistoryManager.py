@@ -1,6 +1,6 @@
 import os, json
 from pathlib import Path
-from json import JSONDecodeError
+from fastapi import HTTPException
 
 async def appendHistory(inDict: dict,filename: str):
     history = []
@@ -8,7 +8,7 @@ async def appendHistory(inDict: dict,filename: str):
         try:
             with open(filename,'r') as f:
                 history = json.load(f)
-        except JSONDecodeError:
+        except json.JSONDecodeError:
             history = []
 
     history.append(inDict)
@@ -21,8 +21,17 @@ async def displayHistory(filename:str):
         try:
             with open(filename,'r') as f:
                 history = json.load(f)
-        except JSONDecodeError:
-            print(f"error opening file {filename}")
-        except FileNotFoundError:
-            print(f"couldnt find the file {filename}")
-    return history
+        except json.JSONDecodeError:
+            raise HTTPException(400,"file couldnt be opened")
+    else:
+        return []
+    return history[::-1]
+
+
+async def DeleteHistory(filename:str):
+    if os.path.exists(filename):
+        os.remove(filename)
+        return "deleted history"
+    else:
+        raise HTTPException(404,"the file was not found, might already be deleted or was never found")
+    

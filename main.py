@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 import os, json
 from datetime import datetime
-from HistoryManager import appendHistory, displayHistory
+from HistoryManager import appendHistory, displayHistory, DeleteHistory
 
 load_dotenv()
 client = genai.Client()
@@ -47,13 +47,9 @@ async def analyseLog(file: UploadFile = File(...)):
 async def getHistory():
     return await displayHistory(filename=historyname)
 
-
-
-
-
-
-
-
+@app.delete("/clearlogs")
+async def clearlogs():
+    return await DeleteHistory(historyname)
 
 
 

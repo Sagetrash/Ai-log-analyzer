@@ -88,7 +88,7 @@ async def analyseText(txt: str = ...):
             # This is the "magic" part: it uses your Pydantic schema
             format=LogAnalysis.model_json_schema()
         )
-        analysis_data = json.loads(response["message"]["content"])
+        Analysis = json.loads(response["message"]["content"])
         await toHistory(Analysis)
         return RedirectResponse("/",200)
     except HTTPException as e:

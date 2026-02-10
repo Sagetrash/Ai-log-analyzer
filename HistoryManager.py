@@ -27,11 +27,9 @@ async def displayHistory(filename:str):
         return []
     return history[::-1]
 
-
 async def DeleteHistory(filename:str):
     if os.path.exists(filename):
         os.remove(filename)
         return "deleted history"
     else:
         raise HTTPException(404,"the file was not found, might already be deleted or was never found")
-    

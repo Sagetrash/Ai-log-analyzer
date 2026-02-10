@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>Log Insights</h1>
+    <section>
+      <h3>Analyze new logs</h3>
+      <form action="/analyseLog" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required />
+        <button type="submit">upload and Analyze</button>
+      </form>
+      <form action="/uploadText" method="post">
+        <textarea
+          name="logtext"
+          id="logtext"
+          placeholder="Paste the logs here..."
+        ></textarea>
+        <button type="submit">Analyze text</button>
+      </form>
+    </section>
+    <hr />
+    <section>
+      <h3>Analysis History</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Brief</th>
+            <th>Recommended Steps</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for items in history %}
+          <tr>
+            <td><strong>{{items.Brief}}</strong></td>
+            <td>
+              <ul>
+                {% for solution in items.solution %}
+                <li>{{ solution }}</li>
+                {% endfor %}
+              </ul>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </body>
+</html>

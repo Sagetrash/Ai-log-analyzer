@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 templates = Jinja2Templates(directory="templates")
 
 load_dotenv()
-client = genai.Client()
+# client = genai.Client()
 app = FastAPI()
 historyname = "History.json"
 

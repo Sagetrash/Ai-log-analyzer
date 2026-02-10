@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, status
-from google import genai
+# from google import genai
+import ollama
 from dotenv import load_dotenv
 from pydantic import BaseModel
 import os, json
@@ -38,16 +39,26 @@ async def analyseLog(file: UploadFile = File(...)):
         raw_data = await file.read()
         content = raw_data.decode("utf-8")
 
-        response = client.models.generate_content(
-            model="gemini-3-flash-preview",
-            contents="""
-            read the below given log and return a 2step solution in the format {"Breif":"error brief in one line","solution":2-step solution}, reply wiht only the dict format and nothing else"""+ content,
-            config={
-                "response_mime_type":"application/json",
-                "response_schema":LogAnalysis
-            }
+        # response = client.models.generate_content(
+        #     model="gemini-3-flash-preview",
+        #     contents="""
+        #     read the below given log and return a 2step solution in the format {"Breif":"error brief in one line","solution":2-step solution}, reply wiht only the dict format and nothing else"""+ content,
+        #     config={
+        #         "response_mime_type":"application/json",
+        #         "response_schema":LogAnalysis
+        #     }
+
+        response = ollama.chat(
+            model="qwen2.5:3b", # Ensure you have pulled this model
+            messages=[{
+                "role": "user", 
+                "content": f"Analyze this log and provide a 2-step solution: {content}"
+            }],
+            # This is the "magic" part: it uses your Pydantic schema
+            format=LogAnalysis.model_json_schema()
         )
-        await toHistory(response.parsed.model_dump())
+        analysis_data = json.loads(response["message"]["content"])
+        await toHistory(Analysis)
         return RedirectResponse("/",200)
     except HTTPException as e:
         
